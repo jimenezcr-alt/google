@@ -1,12 +1,19 @@
-# Deploy CV Review — one link, one deploy
+# Deploy and run the app — no triggers
 
-**One Cloud Run service.** Open **https://goog-demo-cv0-464316124240.europe-west1.run.app** and you get the full app (frontend + API). No second URL, no extra configuration.
+**Deploy from your machine. One link shows the full app.** No Cloud Build triggers.
 
 ---
 
 ## 1. One-time setup
 
-### 1.1 Artifact Registry
+Install **Docker** and **gcloud**, and log in:
+
+```bash
+gcloud auth login
+gcloud config set project telsalprofessors-dev
+```
+
+Create the Artifact Registry repo (once):
 
 ```bash
 gcloud artifacts repositories create cv_review \
@@ -15,74 +22,58 @@ gcloud artifacts repositories create cv_review \
   --project=telsalprofessors-dev
 ```
 
-(Skip if it already exists.)
+Configure Docker to push to Artifact Registry:
 
-### 1.2 Connect GitHub to Cloud Build
-
-1. [Cloud Build → Triggers](https://console.cloud.google.com/cloud-build/triggers).
-2. **Connect repository** → pick your GitHub repo.
-3. Finish the connection.
-
-### 1.3 Create the trigger (single deploy)
-
-1. **Create trigger**.
-2. **Name**: e.g. `deploy-goog-demo-cv0`.
-3. **Event**: Push to a branch.
-4. **Source**: Your connected repo. **Branch**: `^main$` (or your default).
-5. **Configuration**: **Cloud Build configuration file (repo)**.
-6. **Location**: **`cloudrun/cloudbuild-single.yaml`**.
-7. **Substitution variables**:
-
-   | Name          | Value                 |
-   |---------------|-----------------------|
-   | `_PROJECT_ID` | `telsalprofessors-dev` |
-   | `_REGION`     | `europe-west1`        |
-   | `_REPO_NAME`  | `cv_review`           |
-
-8. Save.
+```bash
+gcloud auth configure-docker europe-west1-docker.pkg.dev --project=telsalprofessors-dev
+```
 
 ---
 
-## 2. Deploy
+## 2. Deploy (whenever you want a new version)
 
-- **Option A**: Push to the branch the trigger watches → build and deploy run automatically.
-- **Option B**: In Triggers, open the trigger → **Run**.
+From the **repo root** (where the Makefile and `Dockerfile.app` are):
 
-When the build finishes, open:
+```bash
+make deploy
+```
 
-**https://goog-demo-cv0-464316124240.europe-west1.run.app**
+Or without Make:
 
-You get the app UI (upload CVs, dashboard, etc.). API docs: **/docs**, health: **/api/health**.
+```bash
+export PROJECT_ID=telsalprofessors-dev REGION=europe-west1 REPO=cv_review SERVICE=goog-demo-cv0
+docker build -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/app:latest -f Dockerfile.app .
+docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/app:latest
+gcloud run deploy $SERVICE --image ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/app:latest --region $REGION --platform managed --allow-unauthenticated --project $PROJECT_ID
+```
+
+At the end, gcloud prints the service URL. Open it — you get the full app (frontend + API).
+
+**Example link:** https://goog-demo-cv0-464316124240.europe-west1.run.app
 
 ---
 
-## 3. Fuelix API key (Cloud Run)
+## 3. Fuelix API key (once per service)
 
-Set the API key as an environment variable on the service:
-
-1. **Cloud Run** → service **goog-demo-cv0** → **Edit & deploy new revision**.
-2. **Variables & secrets** → **Add variable** → Name: `FUELIX_API_KEY`, Value: your key.
-3. Deploy.
-
-Or with gcloud:
+So the app can call the API, set the key on the Cloud Run service:
 
 ```bash
 gcloud run services update goog-demo-cv0 \
   --region=europe-west1 \
-  --set-env-vars="FUELIX_API_KEY=your-key" \
+  --set-env-vars="FUELIX_API_KEY=your-actual-key" \
   --project=telsalprofessors-dev
 ```
+
+Or in the console: **Cloud Run** → **goog-demo-cv0** → **Edit** → **Variables & secrets** → add `FUELIX_API_KEY`.
 
 ---
 
 ## Summary
 
-| Item | Value |
+| Step | Command |
 |------|--------|
-| **Config file** | `cloudrun/cloudbuild-single.yaml` |
-| **Dockerfile** | `Dockerfile.app` (repo root) |
-| **Service** | `goog-demo-cv0` |
-| **Region** | `europe-west1` |
-| **App URL** | https://goog-demo-cv0-464316124240.europe-west1.run.app |
+| One-time setup | `make deploy-setup` or run the gcloud commands above |
+| Deploy & run | `make deploy` |
+| App link | The URL gcloud prints, or https://goog-demo-cv0-464316124240.europe-west1.run.app |
 
-One deploy, one link, no extra configuration.
+No triggers. Deploy when you want, click the link to use the app.
