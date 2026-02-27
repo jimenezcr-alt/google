@@ -46,6 +46,16 @@ storage = Storage(data_dir=PROJECT_ROOT / "data")
 jobs: Dict[str, Dict[str, Any]] = {}
 
 
+@app.get("/")
+async def root():
+    """Root route so Cloud Run URL does not return 404."""
+    return {
+        "message": "CV Review API",
+        "docs": "/docs",
+        "health": "/api/health",
+    }
+
+
 async def run_analysis(
     job_id: str,
     cv_text: str,

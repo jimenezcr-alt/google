@@ -106,6 +106,33 @@ Backend container listens on **$PORT** (Cloud Run sets this; default 8080). Base
 
 ---
 
+## 3.1 Set Fuelix API key (and other env vars) in Cloud Run
+
+The backend reads **FUELIX_API_KEY** (or **FUELIX_SECRET_TOKEN**) from the environment. Set it on the Cloud Run service so the API can call Fuelix.
+
+1. Open **Cloud Run** in Google Cloud Console.
+2. Click the service **goog-demo-cv0**.
+3. Open the **Edit & deploy new revision** tab (or **Edit**).
+4. Expand **Variables & secrets** (or **Container, Variables & secrets**).
+5. Under **Environment variables**, add:
+   - **Name**: `FUELIX_API_KEY`
+   - **Value**: your Fuelix API key (or use **Reference a secret** if you store it in Secret Manager).
+6. Optionally add:
+   - `FUELIX_MODEL` (default: gemini-3-pro)
+   - `FUELIX_FAST_MODEL` (default: gemini-2.0-flash)
+   - `FUELIX_BASE_URL` (default: https://api.fuelix.ai/v1)
+7. Deploy the new revision.
+
+**gcloud (one-off):**
+
+```bash
+gcloud run services update goog-demo-cv0 \
+  --region=europe-west1 \
+  --set-env-vars="FUELIX_API_KEY=your-secret-key-here"
+```
+
+---
+
 ## 4. Deploy via GitHub
 
 1. Push to the branch that the trigger watches (e.g. `main`).
