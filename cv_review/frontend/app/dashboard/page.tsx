@@ -356,7 +356,7 @@ export default function DashboardPage() {
                     <tr key={a.id} className="border-b border-[#F1F3F4] hover:bg-[#F8F9FA] transition-colors">
                       <td className="py-3 pr-4">
                         <Link
-                          href={`/analysis/${a.id}`}
+                          href={`/analysis?id=${a.id}`}
                           className="font-medium text-[#4285F4] hover:underline truncate max-w-[160px] block"
                         >
                           {a.filename}
@@ -381,7 +381,7 @@ export default function DashboardPage() {
                       <td className="py-3">
                         <div className="flex gap-2 flex-wrap">
                           <Link
-                            href={`/analysis/${a.id}`}
+                            href={`/analysis?id=${a.id}`}
                             className="text-[#4285F4] hover:underline text-xs"
                           >
                             View

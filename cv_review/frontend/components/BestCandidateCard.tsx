@@ -19,7 +19,7 @@ export default function BestCandidateCard({ candidate, area }: Props) {
       <div className="flex items-start justify-between gap-4 mb-4">
         <div>
           <Link
-            href={`/analysis/${candidate.id}`}
+            href={`/analysis?id=${candidate.id}`}
             className="font-bold text-[#202124] hover:underline text-base"
           >
             {candidate.filename}
@@ -78,7 +78,7 @@ export default function BestCandidateCard({ candidate, area }: Props) {
       </div>
 
       <Link
-        href={`/analysis/${candidate.id}`}
+        href={`/analysis?id=${candidate.id}`}
         className="mt-4 text-sm font-medium hover:underline flex items-center gap-1"
         style={{ color }}
       >

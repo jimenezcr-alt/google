@@ -1,22 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getAnalysis, downloadCandidateReport } from "@/lib/api";
 import type { AnalysisResult } from "@/lib/types";
 import AnalysisResults from "@/components/AnalysisResults";
 
-export default function AnalysisDetailClient() {
-  const params = useParams();
-  const id = params?.id as string;
+function AnalysisContent() {
+  const searchParams = useSearchParams();
+  const id = searchParams.get("id");
   const [data, setData] = useState<(AnalysisResult & { filename?: string; timestamp?: string; analysis_time_seconds?: number; api_calls?: number }) | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [downloading, setDownloading] = useState<"xlsx" | "pdf" | null>(null);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id) {
+      setLoading(false);
+      setError("No analysis ID");
+      return;
+    }
     getAnalysis(id)
       .then((r) => {
         setData({
@@ -87,31 +91,48 @@ export default function AnalysisDetailClient() {
               <p className="font-bold text-[#4285F4]">{data.api_calls}</p>
             </div>
           )}
-          <div className="flex gap-2 border-l border-[#E8EAED] pl-3">
-            <button
-              onClick={() => {
-                setDownloading("xlsx");
-                downloadCandidateReport(id, "xlsx").catch((err) => setError(err instanceof Error ? err.message : "Download failed.")).finally(() => setDownloading(null));
-              }}
-              disabled={!!downloading}
-              className="px-3 py-1.5 rounded-lg border border-[#DADCE0] text-[#202124] text-sm font-medium hover:bg-[#F8F9FA] disabled:opacity-60 flex items-center gap-1.5"
-            >
-              {downloading === "xlsx" ? "…" : "📊"} Excel
-            </button>
-            <button
-              onClick={() => {
-                setDownloading("pdf");
-                downloadCandidateReport(id, "pdf").catch((err) => setError(err instanceof Error ? err.message : "Download failed.")).finally(() => setDownloading(null));
-              }}
-              disabled={!!downloading}
-              className="px-3 py-1.5 rounded-lg border border-[#DADCE0] text-[#202124] text-sm font-medium hover:bg-[#F8F9FA] disabled:opacity-60 flex items-center gap-1.5"
-            >
-              {downloading === "pdf" ? "…" : "📄"} PDF
-            </button>
-          </div>
+          {id && (
+            <div className="flex gap-2 border-l border-[#E8EAED] pl-3">
+              <button
+                onClick={() => {
+                  setDownloading("xlsx");
+                  downloadCandidateReport(id, "xlsx").catch((err) => setError(err instanceof Error ? err.message : "Download failed.")).finally(() => setDownloading(null));
+                }}
+                disabled={!!downloading}
+                className="px-3 py-1.5 rounded-lg border border-[#DADCE0] text-[#202124] text-sm font-medium hover:bg-[#F8F9FA] disabled:opacity-60 flex items-center gap-1.5"
+              >
+                {downloading === "xlsx" ? "…" : "📊"} Excel
+              </button>
+              <button
+                onClick={() => {
+                  setDownloading("pdf");
+                  downloadCandidateReport(id, "pdf").catch((err) => setError(err instanceof Error ? err.message : "Download failed.")).finally(() => setDownloading(null));
+                }}
+                disabled={!!downloading}
+                className="px-3 py-1.5 rounded-lg border border-[#DADCE0] text-[#202124] text-sm font-medium hover:bg-[#F8F9FA] disabled:opacity-60 flex items-center gap-1.5"
+              >
+                {downloading === "pdf" ? "…" : "📄"} PDF
+              </button>
+            </div>
+          )}
         </div>
       </div>
       <AnalysisResults result={data} />
     </div>
+  );
+}
+
+export default function AnalysisPage() {
+  return (
+    <Suspense fallback={
+      <div className="max-w-5xl mx-auto px-4 py-10">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 w-48 bg-gray-200 rounded" />
+          <div className="h-48 bg-gray-200 rounded-xl" />
+        </div>
+      </div>
+    }>
+      <AnalysisContent />
+    </Suspense>
   );
 }
